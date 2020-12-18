@@ -24,22 +24,23 @@ io.on(
       'join',
       (roomName) => {
         let rooms = io.sockets.adapter.rooms;
-        console.log('rooms ->', rooms);
+        console.log('socket.on -> join -> roomName ->', roomName);
+        console.log('socket.on -> join -> rooms ->', rooms);
         // let room = io.sockets.adapter.rooms.get(roomName);
         let room = rooms.get(roomName);
         if ( !room ) {
           socket.join(roomName);
           socket.emit('created');
-          console.log('Room Created');
+          console.log('socket.on -> join -> Room Created');
         }
         else if (room.size === 1 ) {
           socket.join(roomName);
           socket.emit('joined');
-          console.log('Joined to Room');
+          console.log('socket.on -> join -> Joined to Room');
         }
         else {
           socket.emit('full');
-          console.log('Room' + roomName + ' is already full!');
+          console.log('socket.on -> join -> Room' + roomName + ' is already full!');
         }
       }
     );  // End of socket.on('join)
@@ -47,30 +48,31 @@ io.on(
     socket.on(
       'ready',
       ( roomName ) => {
-        console.log('ready');
+        console.log('socket.on -> ready -> roomName -> ', roomName);
         socket.broadcast.to(roomName).emit('ready');
       }
-      );
+    );
       
-      socket.on(
-        'candidate',
-        ( candidate,  roomName ) => {
+    socket.on(
+      'candidate',
+      ( candidate,  roomName ) => {
         console.log('candidate');
         socket.broadcast.to(roomName).emit('candidate', candidate);
       }
-      );
+    );
       
-      socket.on(
-        'offer',
-        ( offer,  roomName ) => {
-        console.log('offer');
+    socket.on(
+      'offer',
+      ( offer,  roomName ) => {
+        console.log('offer -> ');
+        console.log(offer);
         socket.broadcast.to(offer, roomName).emit('offer', offer);
       }
-      );
+    );
       
-      socket.on(
-        'answer',
-        ( answer, roomName ) => {
+    socket.on(
+      'answer',
+      ( answer, roomName ) => {
         console.log('answer');
         socket.broadcast.to(roomName).emit('answer', answer);
       }

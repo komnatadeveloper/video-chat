@@ -8,6 +8,19 @@ let peerVideo = document.getElementById("peer-video");
 let roomInput = document.getElementById("roomName");
 let roomName = roomInput.value;
 let creator = false; // to help us know we are the creator or joiner to room
+let rtcPeerConnection;
+let userStream;
+
+let iceServers = {
+  iceServers: [
+    {
+      urls: "stun:stun.services.mozilla.com",
+    },
+    {
+      urls: "stun:stun3.l.google.com:19302"
+    },
+  ]
+}
 
 joinButton.addEventListener(
   'click',
@@ -18,8 +31,8 @@ joinButton.addEventListener(
     else {      
       socket.emit(
         'join',
-        // roomInput.value
-        roomName
+        roomInput.value
+        // roomName
       );
       
     }
@@ -28,60 +41,108 @@ joinButton.addEventListener(
 
 socket.on(
   'created',
-  ( ) => {
+  async ( ) => {
+    console.log('socket.on -> created -> FIRED')
     creator = true;
     let stream = null;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia(
-        // constraints
-        {
-          audio: true,
-          video: {
-            width: 1280,
-            height: 720
-          },
-          // or maybe video: true would be easier & simpler
-        }
-      );
+    // try {
+      // stream = await navigator.mediaDevices.getUserMedia(
+      //   // constraints
+      //   {
+      //     audio: true,
+      //     video: {
+      //       width: 1280,
+      //       height: 720
+      //     },
+      //     // or maybe video: true would be easier & simpler
+      //   }
+      // );
+      // userStream = stream;
+      // userVideo.srcObject = stream;
+      // userVideo.onloadedmetadata = ( e ) => {
+      //   userVideo.play();
+      // }
+      // divVideoChatLobby.style = ('display:none');
+    // } catch (err) {
+    //   console.log('Error -> ', err);
+    //   alert('Couldnt access User Media!');
+    // }
+    navigator.mediaDevices
+    .getUserMedia({
+      audio: true,
+      video: { width: 1280, height: 720 },
+    })
+    .then(function (stream) {
+      /* use the stream */
+      userStream = stream;
+      divVideoChatLobby.style = "display:none";
       userVideo.srcObject = stream;
-      userVideo.onloadedmetadata = ( e ) => {
+      userVideo.onloadedmetadata = function (e) {
         userVideo.play();
-      }
-      divVideoChatLobby.style = ('display:none');
-    } catch (err) {
-      console.log('Error -> ', err);
-      alert('Couldnt access User Media!');
-    }
+      };
+    })
+    .catch(function (err) {
+      /* handle the error */
+      alert("Couldn't Access User Media");
+    });
   }
 );
+
 socket.on(
   'joined',
-  ( ) => {
+  async ( ) => {
+    console.log('socket.on -> joined -> FIRED')
     creator = false;
-    let stream = null;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia(
-        // constraints
-        {
-          audio: true,
-          video: {
-            width: 1280,
-            height: 720
-          },
-          // or maybe video: true would be easier & simpler
-        }
-      );
+    // let stream = null;
+    // try {
+    //   stream = await navigator.mediaDevices.getUserMedia(
+    //     // constraints
+    //     {
+    //       audio: true,
+    //       video: {
+    //         width: 1280,
+    //         height: 720
+    //       },
+    //       // or maybe video: true would be easier & simpler
+    //     }
+    //   );
+    //   userStream = stream;
+    //   userVideo.srcObject = stream;
+    //   userVideo.onloadedmetadata = ( e ) => {
+    //     userVideo.play();
+    //   }
+    //   divVideoChatLobby.style = ('display:none');
+    //   socket.emit(
+    //     'ready',
+    //     roomName
+    //   );
+    // } catch (err) {
+    //   console.log('Error -> ', err);
+    //   alert('Couldnt access User Media!');
+    // }
+    navigator.mediaDevices
+    .getUserMedia({
+      audio: true,
+      video: { width: 1280, height: 720 },
+    })
+    .then(function (stream) {
+      /* use the stream */
+      userStream = stream;
+      divVideoChatLobby.style = "display:none";
       userVideo.srcObject = stream;
-      userVideo.onloadedmetadata = ( e ) => {
+      userVideo.onloadedmetadata = function (e) {
         userVideo.play();
-      }
-      divVideoChatLobby.style = ('display:none');
-    } catch (err) {
-      console.log('Error -> ', err);
-      alert('Couldnt access User Media!');
-    }
+      };
+      socket.emit("ready", roomInput.value);
+    })
+    .catch(function (err) {
+      /* handle the error */
+      alert("Couldn't Access User Media");
+    });
   }
 );
+
+
 socket.on(
   'full',
   ( ) => {
@@ -91,7 +152,38 @@ socket.on(
 socket.on(
   'ready',
   ( ) => {
+    console.log('socket.on -> ready -> FIRED')
+    if ( creator ) {
+      rtcPeerConnection = new RTCPeerConnection(
+        iceServers
+      );
+      rtcPeerConnection.onicecandidate = OnIceCandidateFunction;
+      rtcPeerConnection.ontrack = OnTrackFunction;
+      rtcPeerConnection.addTrack(
+        userStream.getTracks()[0],
+        userStream,
+      );
+      rtcPeerConnection.addTrack(
+        userStream.getTracks()[1],
+        userStream,
+      );
+      rtcPeerConnection.createOffer(
+        // success case:
+        (offer) => {
+          socket.emit(
+            'offer',
+            offer,
+            roomName
+          );
+        },
+        // fail case:
+        ( error ) => {
+          console.log('socket.on -> ready -> createOffer -> error -> ', error);
+        },
 
+      );
+
+    }
   }
 );
 socket.on(
@@ -112,3 +204,23 @@ socket.on(
 
   }
 );
+
+const OnIceCandidateFunction = ( event ) => {
+  console.log('OnIceCandidateFunction -> FIRED')
+  if ( event.candidate ) {
+    socket.emit(
+      'candidate',
+      event.candidate,
+      roomName
+    )
+  }
+}
+
+const OnTrackFunction = ( event ) => {
+  if ( event.candidate ) {
+    peerVideo.srcObject = event.streams[0];
+    peerVideo.onloadedmetadata = ( e ) => {
+      peerVideo.play();
+    }
+  }
+}
