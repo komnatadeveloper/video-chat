@@ -1,4 +1,5 @@
 const express = require('express');
+const ngrok = require('ngrok');
 const socket = require("socket.io");
 const app = express();
 
@@ -82,3 +83,12 @@ io.on(
 
   }
 );
+
+// ngrok.connect({
+//   addr: 4000  
+// })
+//   .then( 
+//     url => {
+//       console.log('ngrok url -> ', url);
+//     }
+//   )

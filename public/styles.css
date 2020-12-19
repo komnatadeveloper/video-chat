@@ -63,3 +63,30 @@ button {
   padding: 12px 0;
   width: 100%;
 }
+
+#video-chat-room {
+  display: flex;
+  justify-content: center;
+}
+
+#user-video {
+  padding: 20px;
+}
+#peer-video {
+  padding: 20px;
+}
+
+.btn-group {
+  /* align-content: center; */
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  width: 600 !important;
+  
+}
+
+.btn-group button {
+  /* width: 140 !important; */
+  padding: 1rem 2rem;
+  width: fit-content;
+}
