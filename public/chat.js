@@ -7,6 +7,14 @@ let joinButton = document.getElementById("join");
 let userVideo = document.getElementById("user-video");
 let peerVideo = document.getElementById("peer-video");
 let roomInput = document.getElementById("roomName");
+
+let divButtonGroup = document.getElementById('btn-group')
+let muteButton = document.getElementById("muteButton");
+let hideCameraButton = document.getElementById("hideCameraButton");
+let leaveRoomButton = document.getElementById("leaveRoomButton");
+let muteFlag = false;
+let hideCameraFlag = false;
+
 let roomName = roomInput.value;
 let creator = false; // to help us know we are the creator or joiner to room
 let rtcPeerConnection;
@@ -43,34 +51,40 @@ joinButton.addEventListener(
   }
 );  // End of joinButton.addEventListener( 'click',
 
+
+muteButton.addEventListener(
+  'click',
+  async ( ) => {
+    muteFlag = !muteFlag;
+    if(muteFlag) {
+      userStream.getTracks()[0].enabled = false;
+      muteButton.textContent = 'UnMute';
+    } else {
+      userStream.getTracks()[0].enabled = true;
+      muteButton.textContent = 'Mute';
+    }
+  }
+  );  // End of muteButton.addEventListener( 'click',
+  
+  hideCameraButton.addEventListener(
+    'click',
+    async ( ) => {
+      hideCameraFlag = !hideCameraFlag;
+      if(hideCameraFlag) {
+        userStream.getTracks()[1].enabled = false;
+        hideCameraButton.textContent = 'Show Camera';
+      } else {
+        userStream.getTracks()[1].enabled = true;
+        hideCameraButton.textContent = 'Hide Camera';
+      }
+  }
+);  // End of hideCameraButton.addEventListener( 'click',
+
 socket.on(
   'created',
   async ( ) => {
     console.log('socket.on -> created -> FIRED')
     creator = true;
-    let stream = null;
-    // try {
-      // stream = await navigator.mediaDevices.getUserMedia(
-      //   // constraints
-      //   {
-      //     audio: true,
-      //     video: {
-      //       width: 1280,
-      //       height: 720
-      //     },
-      //     // or maybe video: true would be easier & simpler
-      //   }
-      // );
-      // userStream = stream;
-      // userVideo.srcObject = stream;
-      // userVideo.onloadedmetadata = ( e ) => {
-      //   userVideo.play();
-      // }
-      // divVideoChatLobby.style = ('display:none');
-    // } catch (err) {
-    //   console.log('Error -> ', err);
-    //   alert('Couldnt access User Media!');
-    // }
     navigator.mediaDevices
     .getUserMedia({
       audio: true,
@@ -80,6 +94,7 @@ socket.on(
       /* use the stream */
       userStream = stream;
       divVideoChatLobby.style = "display:none";
+      divButtonGroup.style = "display:flex";
       userVideo.srcObject = stream;
       userVideo.onloadedmetadata = function (e) {
         userVideo.play();
@@ -97,33 +112,6 @@ socket.on(
   async ( ) => {
     console.log('socket.on -> joined -> FIRED')
     creator = false;
-    // let stream = null;
-    // try {
-    //   stream = await navigator.mediaDevices.getUserMedia(
-    //     // constraints
-    //     {
-    //       audio: true,
-    //       video: {
-    //         width: 1280,
-    //         height: 720
-    //       },
-    //       // or maybe video: true would be easier & simpler
-    //     }
-    //   );
-    //   userStream = stream;
-    //   userVideo.srcObject = stream;
-    //   userVideo.onloadedmetadata = ( e ) => {
-    //     userVideo.play();
-    //   }
-    //   divVideoChatLobby.style = ('display:none');
-    //   socket.emit(
-    //     'ready',
-    //     roomName
-    //   );
-    // } catch (err) {
-    //   console.log('Error -> ', err);
-    //   alert('Couldnt access User Media!');
-    // }
     navigator.mediaDevices
     .getUserMedia({
       audio: true,
@@ -133,6 +121,7 @@ socket.on(
       /* use the stream */
       userStream = stream;
       divVideoChatLobby.style = "display:none";
+      divButtonGroup.style = "display:flex";
       userVideo.srcObject = stream;
       userVideo.onloadedmetadata = function (e) {
         userVideo.play();
@@ -250,6 +239,51 @@ socket.on(
     rtcPeerConnection.setRemoteDescription(
       answer
     );
+  }
+);
+
+
+leaveRoomButton.addEventListener(
+  'click',
+  async ( ) => {
+    socket.emit(
+      'leave',
+      roomInput.value
+    );
+    divVideoChatLobby.style = "display:block";
+    divButtonGroup.style = "display:none";
+    if(userVideo.srcObject) {
+      userVideo.srcObject.getTracks()[0].stop();
+      userVideo.srcObject.getTracks()[1].stop();
+    }
+    if(peerVideo.srcObject) {
+      peerVideo.srcObject.getTracks()[0].stop();
+      peerVideo.srcObject.getTracks()[1].stop();
+    }
+    
+    if( rtcPeerConnection ) {
+      rtcPeerConnection.ontrack = null;
+      rtcPeerConnection.onicecandidate = null;
+      rtcPeerConnection.close();
+      rtcPeerConnection = null;
+    }
+  }
+  );  // End of leaveRoomButton.addEventListener( 'click',
+  socket.on(
+    'leave',
+    ( ) => {
+      creator = true; // now he is creator because he is the only one in this room
+      if(peerVideo.srcObject) {
+        peerVideo.srcObject.getTracks()[0].stop();
+        peerVideo.srcObject.getTracks()[1].stop();
+      }
+      if( rtcPeerConnection ) {
+        rtcPeerConnection.ontrack = null;
+        rtcPeerConnection.onicecandidate = null;
+        rtcPeerConnection.close();
+        rtcPeerConnection = null;
+      }
+
   }
 );
 

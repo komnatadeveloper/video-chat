@@ -77,6 +77,15 @@ io.on(
         console.log('answer');
         socket.broadcast.to(roomName).emit('answer', answer);
       }
+      );
+      
+      socket.on(
+        'leave',
+        ( roomName ) => {
+          console.log('socket.on -> leave -> roomName -> ', roomName);
+          socket.leave(roomName);
+          socket.broadcast.to(roomName).emit('leave');
+      }
     );
 
 
