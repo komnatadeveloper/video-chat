@@ -67,7 +67,8 @@ io.on(
       ( offer,  roomName ) => {
         console.log('offer -> ');
         console.log(offer);
-        socket.broadcast.to(offer, roomName).emit('offer', offer);
+        // socket.broadcast.to(offer, roomName).emit('offer', offer);
+        socket.broadcast.to(roomName).emit('offer', offer);
       }
     );
       
@@ -93,11 +94,11 @@ io.on(
   }
 );
 
-// ngrok.connect({
-//   addr: 4000  
-// })
-//   .then( 
-//     url => {
-//       console.log('ngrok url -> ', url);
-//     }
-//   )
+ngrok.connect({
+  addr: 4000  
+})
+  .then( 
+    url => {
+      console.log('ngrok url -> ', url);
+    }
+  )

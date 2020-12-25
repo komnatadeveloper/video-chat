@@ -1,4 +1,5 @@
-let socket = io.connect("http://localhost:4000");
+// let socket = io.connect("http://localhost:4000");
+let socket = io.connect("https://6857e052c69f.ngrok.io");
 // let socket = io.connect("https://4947eeefdb73.ngrok.io");
 // let socket = io.connect("http://192.168.1.29:4000");
 let divVideoChatLobby = document.getElementById("video-chat-lobby");
@@ -127,6 +128,7 @@ socket.on(
         userVideo.play();
       };
       socket.emit("ready", roomInput.value);
+      console.log('EMITTED -> ready event -> roomName ->', roomInput.value)
     })
     .catch(function (err) {
       /* handle the error */
@@ -163,15 +165,16 @@ socket.on(
       rtcPeerConnection.createOffer(
         // success case:
         ( offer  ) => {
-          console.log('socket.on -> ready -> createOffer -> success -> offer -> ', error);
+          console.log('socket.on -> ready -> createOffer -> success -> offer -> ', offer);
           rtcPeerConnection.setLocalDescription(
             offer
           );
           socket.emit(
             'offer',
             offer,
-            roomName
+            roomInput.value
           );
+          console.log('You have emitted offer -> offer ->', offer);
         },
         // fail case:
         ( error ) => {
@@ -184,6 +187,7 @@ socket.on(
 socket.on(
   'candidate',
   ( candidate ) => {
+    console.log('socket.on -> candidate -> candidate -> ', candidate);
     let iceCandidate = new RTCIceCandidate(candidate);
     rtcPeerConnection.addIceCandidate(
       iceCandidate
@@ -193,41 +197,57 @@ socket.on(
 socket.on(
   'offer',
   ( offer ) => {
-    if ( !creator ) {
-      rtcPeerConnection = new RTCPeerConnection(
-        iceServers
-      );
-      rtcPeerConnection.onicecandidate = OnIceCandidateFunction;
-      rtcPeerConnection.ontrack = OnTrackFunction;
-      rtcPeerConnection.addTrack(
-        userStream.getTracks()[0],
-        userStream,
-      );
-      rtcPeerConnection.addTrack(
-        userStream.getTracks()[1],
-        userStream,
-      );
-      rtcPeerConnection.setRemoteDescription(
-        offer
-      );
-      rtcPeerConnection.createAnswer(
-        // success case:
-        (answer) => {
-          console.log('socket.on -> offer -> createAnswer -> success -> offer -> ', error);
-          rtcPeerConnection.setLocalDescription(
-            answer
-          );
-          socket.emit(
-            'answer',
-            answer,
-            roomName
-          );
-        },
-        // fail case:
-        ( error ) => {
-          console.log('socket.on -> offer -> createAnswer -> error -> ', error);
-        },
-      );
+    try {      
+      console.log('socket.on -> offer -> ', offer);
+      // if ( !creator ) {
+        console.log('1')
+        rtcPeerConnection = new RTCPeerConnection(
+          iceServers
+        );
+        console.log('1.1')
+        rtcPeerConnection.onicecandidate = OnIceCandidateFunction;
+        rtcPeerConnection.ontrack = OnTrackFunction;
+        console.log('1.2')
+        rtcPeerConnection.addTrack(
+          userStream.getTracks()[0],
+          userStream,
+        );
+        console.log('1.3')
+        rtcPeerConnection.addTrack(
+          userStream.getTracks()[1],
+          userStream,
+        );
+        console.log('1.4')
+        rtcPeerConnection.setRemoteDescription(
+          offer
+        );
+        console.log('1.5')
+        console.log('rtcPeerConnection -> ', rtcPeerConnection)
+        rtcPeerConnection.createAnswer(
+          // success case:
+          (answer) => {
+            console.log('2')
+            console.log('socket.on -> offer -> createAnswer -> success -> answer -> ', answer);
+            rtcPeerConnection.setLocalDescription(
+              answer
+            );
+            console.log('3')
+            
+            socket.emit(
+              'answer',
+              answer,
+              roomName
+              );
+              console.log('4')
+          },
+          // fail case:
+          ( error ) => {
+            console.log('socket.on -> offer -> createAnswer -> error -> ', error);
+          },
+        );
+      // }
+    } catch (err) {
+      console.log('socket.on -> offer -> errors -> ', err);
     }
   }
 );
@@ -288,12 +308,12 @@ leaveRoomButton.addEventListener(
 );
 
 const OnIceCandidateFunction = ( event ) => {
-  console.log('OnIceCandidateFunction -> FIRED')
+  console.log('OnIceCandidateFunction -> FIRED -> event -> ', event);
   if ( event.candidate ) {
     socket.emit(
       'candidate',
       event.candidate,
-      roomName
+      roomInput.value
     )
   }
 }
