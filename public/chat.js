@@ -1,5 +1,5 @@
 // let socket = io.connect("http://localhost:4000");
-let socket = io.connect("https://6857e052c69f.ngrok.io");
+let socket = io.connect("https://3bc549e06802.ngrok.io/");
 // let socket = io.connect("https://4947eeefdb73.ngrok.io");
 // let socket = io.connect("http://192.168.1.29:4000");
 let divVideoChatLobby = document.getElementById("video-chat-lobby");
@@ -89,7 +89,7 @@ socket.on(
     navigator.mediaDevices
     .getUserMedia({
       audio: true,
-      video: { width: 500, height: 500 },
+      video: { width: 200, height: 113 },
     })
     .then(function (stream) {
       /* use the stream */
@@ -116,7 +116,7 @@ socket.on(
     navigator.mediaDevices
     .getUserMedia({
       audio: true,
-      video: { width: 500, height: 500 },
+      video: { width: 200, height: 113 },
     })
     .then(function (stream) {
       /* use the stream */
@@ -144,16 +144,23 @@ socket.on(
     alert('Room is full! Can\'t join');
   }
 );
+
 socket.on(
   'ready',
   ( ) => {
-    console.log('socket.on -> ready -> FIRED')
+    console.log('socket.on -> ready -> FIRED -> Am I Creator -> ', creator);
     if ( creator ) {
       rtcPeerConnection = new RTCPeerConnection(
         iceServers
       );
       rtcPeerConnection.onicecandidate = OnIceCandidateFunction;
       rtcPeerConnection.ontrack = OnTrackFunction;
+      setTimeout(
+       () => {
+
+      },
+      1500
+      );
       rtcPeerConnection.addTrack(
         userStream.getTracks()[0],
         userStream,
@@ -194,11 +201,13 @@ socket.on(
     );
   }
 );
+
 socket.on(
   'offer',
-  ( offer ) => {
+  async ( offer ) => {
     try {      
       console.log('socket.on -> offer -> ', offer);
+      console.log('Am I Creator ? -> ', creator);
       // if ( !creator ) {
         console.log('1')
         rtcPeerConnection = new RTCPeerConnection(
@@ -222,10 +231,10 @@ socket.on(
           offer
         );
         console.log('1.5')
-        console.log('rtcPeerConnection -> ', rtcPeerConnection)
-        rtcPeerConnection.createAnswer(
+        // console.log('rtcPeerConnection -> ', rtcPeerConnection)
+        await rtcPeerConnection.createAnswer(
           // success case:
-          (answer) => {
+          function (answer) {
             console.log('2')
             console.log('socket.on -> offer -> createAnswer -> success -> answer -> ', answer);
             rtcPeerConnection.setLocalDescription(
@@ -236,9 +245,9 @@ socket.on(
             socket.emit(
               'answer',
               answer,
-              roomName
-              );
-              console.log('4')
+              roomInput.value
+            );
+            console.log('4')
           },
           // fail case:
           ( error ) => {
@@ -251,11 +260,34 @@ socket.on(
     }
   }
 );
+
+// socket.on("offer", function (offer) {
+//   if (!creator) {
+//     rtcPeerConnection = new RTCPeerConnection(iceServers);
+//     rtcPeerConnection.onicecandidate = OnIceCandidateFunction;
+//     rtcPeerConnection.ontrack = OnTrackFunction;
+//     rtcPeerConnection.addTrack(userStream.getTracks()[0], userStream);
+//     rtcPeerConnection.addTrack(userStream.getTracks()[1], userStream);
+//     rtcPeerConnection.setRemoteDescription(offer);
+//     rtcPeerConnection.createAnswer(
+//       function (answer) {
+//         rtcPeerConnection.setLocalDescription(answer);
+//         socket.emit("answer", answer, roomName);
+//       },
+//       function (error) {
+//         console.log(error);
+//       }
+//     );
+//   }
+// });
+
+
 socket.on(
   'answer',
   ( 
     answer // this is Session Description from CALLEE to CALLER
   ) => {
+    console.log('socket.on -> answer FIRED -> answer -> ', answer);
     rtcPeerConnection.setRemoteDescription(
       answer
     );
@@ -315,14 +347,17 @@ const OnIceCandidateFunction = ( event ) => {
       event.candidate,
       roomInput.value
     )
+    console.log('OnIceCandidateFunction -> you have socket.EMITTED candidate');
   }
 }
 
 const OnTrackFunction = ( event ) => {
-  if ( event.candidate ) {
+  console.log('OnTrackFunction Function Fired ->  ');
+  console.log('OnTrackFunction Function Fired -> event -> ', event);
+  // if ( event.candidate ) {
     peerVideo.srcObject = event.streams[0];
-    peerVideo.onloadedmetadata = ( e ) => {
+    peerVideo.onloadedmetadata = function ( e ) {
       peerVideo.play();
     }
-  }
+  // }
 }

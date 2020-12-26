@@ -57,7 +57,8 @@ io.on(
     socket.on(
       'candidate',
       ( candidate,  roomName ) => {
-        console.log('candidate');
+        console.log('socket.on -> candidate -> candidate -> ', candidate);
+        console.log('socket.on -> candidate -> roomName -> ', roomName);
         socket.broadcast.to(roomName).emit('candidate', candidate);
       }
     );
@@ -75,19 +76,26 @@ io.on(
     socket.on(
       'answer',
       ( answer, roomName ) => {
-        console.log('answer');
+        console.log('socket.on -> answer -> roomName -> ', roomName);
         socket.broadcast.to(roomName).emit('answer', answer);
       }
-      );
+    );
       
-      socket.on(
-        'leave',
-        ( roomName ) => {
+    socket.on(
+      'leave',
+      ( roomName ) => {
           console.log('socket.on -> leave -> roomName -> ', roomName);
           socket.leave(roomName);
           socket.broadcast.to(roomName).emit('leave');
       }
     );
+
+    socket.on(
+      'disconnect',
+      ( ) => {
+        console.log('Socket has been disconnected!...');
+      }
+    )
 
 
 
